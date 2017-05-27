@@ -1,0 +1,30 @@
+.panel {
+	background-color: rgba(255,255,255,0.7);
+}
+
+.navbar-default .navbar-brand {
+	font-family: 'Lobster', cursive;
+}
+
+textarea {
+	resize: vertical;
+}
+
+.alert {
+	font-weight: bold;
+}
+
+#flash-message {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    z-index: 10;
+    margin-rght: -50%;
+    transform: translate(-50%, -50%);
+    animation: flash-message 7s forwards;
+}
+
+@keyframes flash-message {
+    0%   {opacity: 1;}
+    100% {opacity: 0; display:none;}
+}
