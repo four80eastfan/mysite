@@ -22,7 +22,7 @@ class Confirm extends Mailable
     public function __construct($token)
     {
         $this->token = $token;
-        $this->link = 'http://website.dev/register/' . $token;    
+        $this->link = 'http://mattakkerman.com/register/' . $token;    
     }
 
     /**

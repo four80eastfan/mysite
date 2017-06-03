@@ -26,7 +26,7 @@ class ConfirmEmailController extends Controller
 
         session()->flash('message', 'Registration link sent.');
 
-    	return view('welcome');
+    	return redirect('welcome');
     }
 
     /**
