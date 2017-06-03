@@ -51,7 +51,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'mattakkerman.com'),
+    'url' => env('APP_URL', 'https://mattakkerman.com'),
 
     /*
     |--------------------------------------------------------------------------
