@@ -178,7 +178,7 @@ try:
             else:
                 print("***Failed to authenticate using the private keys available to the SSH agent.***")
                 print(
-                    "***Please use the -k <path> parameter if you know the path to a specific key that you would like to try.***")
+                    "***Please use the -k &lt;path&gt; parameter if you know the path to a specific key that you would like to try.***")
 
             sshAgent.close()
 

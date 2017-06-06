@@ -1,7 +1,7 @@
 @component('mail::message')
 # Howdy!
 
-You're less than a minute away from completing your registration. Please click on the button below in order in order to continue signing up.
+You're less than a minute away from completing your registration. Please click on the button below in order to continue signing up.
 
 @component('mail::button', ['url' => $link])
 Register
