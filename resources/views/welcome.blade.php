@@ -103,6 +103,12 @@
                 0%   {opacity: 1;}
                 100% {opacity: 0; display:none;}
             }
+
+            @media (max-width: 550px) {
+                .title {
+                    font-size: 40px;
+                }
+            }
         </style>
     </head>
     <body>
