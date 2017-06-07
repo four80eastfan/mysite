@@ -21,7 +21,7 @@ class ContactController extends Controller
 
 		session()->flash('message', 'Message sent. Thank you!');
 
-    	return view('welcome');
+    	return redirect('/welcome');
     }
 
     /**
