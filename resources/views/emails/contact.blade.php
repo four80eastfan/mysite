@@ -1,13 +1,8 @@
-<!DOCTYPE html>
+@component('mail::message')
+# A message for you!
 
-<html>
+New message from {{ $data->name }} at {{ $data->email }}.
 
-<head>
-	<title></title>
-</head>
+{{ $data->message }}
 
-<body>
-	<h1>New message from {{ $data->name }} at {{ $data->email }}. Message is {{ $data->message }}</h1>
-</body>
-
-</html>
+@endcomponent
