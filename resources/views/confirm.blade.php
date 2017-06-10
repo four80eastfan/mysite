@@ -25,7 +25,7 @@
                             <label for="email" class="col-md-4 control-label">E-Mail Address</label>
 
                             <div class="col-md-6">
-                                <input id="email" type="email" class="form-control" name="email" required>
+                                <input id="email" type="email" class="form-control" name="email" value="{{ old('email') }}" required>
 
                                 @if ($errors->has('email'))
                                     <span class="help-block">
@@ -34,14 +34,6 @@
                                 @endif
                             </div>
                         </div>
-
-                        <!--<div class="form-group">
-                            <label for="email-confirm" class="col-md-4 control-label">Confirm E-Mail</label>
-
-                            <div class="col-md-6">
-                                <input id="email-confirm" type="email" class="form-control" name="email_confirmation" required>
-                            </div>
-                        </div>-->
 
                         <div class="form-group">
                             <div class="col-md-6 col-md-offset-4">
