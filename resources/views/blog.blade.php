@@ -3,7 +3,7 @@
 @section('content')
 <div class="container">
 <div class="content-block">
-    <h1>Python SSH Client with Paramiko</h1>
+    <h1>Inventory Scan of Windows Domain Computers</h1>
     <time datetime="2017-04-16">April 10, 2017</time>
     <p>Scan computers on domain for specific installed software and what version of Windows they're running. Outputs an Excel spreadsheet report.</p>
     <pre class="prettyprint">
