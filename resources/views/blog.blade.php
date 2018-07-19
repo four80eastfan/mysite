@@ -3,6 +3,233 @@
 @section('content')
 <div class="container">
 <div class="content-block">
+    <h1>Python SSH Client with Paramiko</h1>
+    <time datetime="2017-04-16">April 10, 2017</time>
+    <p>Scan computers on domain for specific installed software. Outputs an Excel spreadsheet report</p>
+    <pre class="prettyprint">
+try {
+
+    [System.Collections.ArrayList]$computers = Get-ADComputer -SearchBase '<your domain here>' -Filter '*' -Properties Description
+    
+    # list of software that's going to be checked for
+    $software = @{"*office professional plus 2007*" = @(2, 1); # @(row, column) in spreadsheet
+                  "*office professional plus 2010*" = @(2, 2); 
+                  "*office professional plus 2013*" = @(2, 3); 
+                  "*office standard 2007*" = @(2, 4);
+                  "*office standard 2010*" = @(2, 5); 
+                  "*office standard 2013*" = @(2, 6);
+                  "*office visio standard 2003*" = @(2, 7);
+                  "*office visio standard 2010*" = @(2, 8);
+                  "*adobe acrobat 9 standard*" = @(2, 9);
+                  "*adobe acrobat 9 pro*" = @(2, 10);
+                  "*adobe acrobat x standard*" = @(2, 11);
+                  "*adobe acrobat x pro*" = @(2, 12);
+                  "*adobe acrobat xi standard*" = @(2, 13);
+                  "*adobe acrobat xi pro*" = @(2, 14);
+                  "*adobe acrobat dc*" = @(2, 15);
+                  "Adobe Acrobat 2017" = @(2, 16);
+                  "Microsoft SQL Server 2012 (64-bit)" = @(2, 17);
+                  "Microsoft SQL Server 2008 R2 (64-bit)" = @(2, 18);
+                  "Microsoft SQL Server 2005 (64-bit)" = @(2, 19);
+                  "Microsoft Windows 7 Professional" = @(2, 20);
+                  "Microsoft Windows 10 Pro" = @(2, 21);
+                  "Microsoft Windows Server 2008 R2 Standard" = @(2, 22);
+                  "Microsoft Windows Server 2003 R2 Standard Edition" = @(2, 23);
+                  "Microsoft Windows Server 2012 R2 Standard" = @(2, 24);
+                  "Unknown OS" = @(2, 25)}
+
+    # text file to keep track of computers that can't be reached
+    $unreachable = "C:\Users\makkerman\Desktop\rescan\unreachable.txt"
+    New-Item $unreachable -type file -force
+
+    # text file to keep track of computers that can be reached but whose registry can't be accessed
+    $no_registry_access = "C:\Users\makkerman\Desktop\rescan\no-reg-access.txt"
+    New-Item $no_registry_access -type file -force
+
+    # setup the excel spreadsheet
+    $spreadsheet = "C:\Users\makkerman\Desktop\rescan\spreadsheet.xlsx" 
+    $Excel = New-Object -ComObject Excel.Application
+    $ExcelWorkBook = $Excel.Workbooks.Open($spreadsheet)
+    $ExcelWorkSheet = $Excel.WorkSheets.item("sheet1")
+    $ExcelWorkSheet.activate()
+
+    # set the column headers to the name of the software
+    foreach($key in $software.Keys) {
+        $ExcelWorkSheet.Cells.Item(1,$software[$key][1]) = $key
+    }
+
+    # loop while there are still computers to be checked
+    while($computers.count -gt 0){
+        $uncheckedComputers = [System.Collections.ArrayList]@()
+
+        foreach($computer in $computers) {
+            $computerName = $computer.Name
+            
+            $reachable = Test-Connection -ComputerName $computerName -Count 2 -Quiet
+            
+            if($reachable) {
+                $reachable = Test-Connection $computerName
+                $ip = $reachable.Item(0).IPV4Address.IPAddressToString
+
+                # do something of a reverse DNS check to make sure that we're not referencing a stale DNS record
+                $ping = ping -a -r 2 $ip
+                $name = $ping.Item(1).split(" ")[1].split(".")[0]
+
+                if($name.ToUpper() -ne $computerName.ToUpper()) {
+                    write-host "name is $name. adding $computerName to unchecked" -foreground "red"
+                    [void]$uncheckedComputers.add($computer)
+                    continue    
+                } else {
+                    write-host "able to resolve ip to $computerName"
+                }
+
+                # make sure the remote registry service is started and start if not
+                if((Get-Service -ComputerName $computerName -Name RemoteRegistry).Status -eq "Stopped") {
+                    Get-Service -ComputerName $computerName -Name RemoteRegistry | Start-Service
+                }
+            
+                $LMkeys = @()
+                $userKeys = @()
+                $sw_list = @()  
+
+                try {
+                    $usersHive = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey('Users', $computerName) # open HKEY_USERS hive
+                    
+                    $LMHive = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey('LocalMachine', $computerName) # open HKEY_LOCAL_MACHINE hive
+                    
+                    $userProfiles = $usersHive.GetSubKeyNames() # the subkeys of $usersHive are all of the profiles on the computer
+                    
+                    if($LMHive.OpenSubKey("Software\Microsoft\Windows\CurrentVersion\Uninstall")) { # if the key exists (it's there but I'm erring on the side of caution)
+                        $LMkeys += "Software\Microsoft\Windows\CurrentVersion\Uninstall" # x64 software keys to look through
+                    }
+                    
+                    if($LMHive.OpenSubKey("Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall")) { # if the key exists (it's there but I'm erring on the side of caution)
+                        $LMkeys += "Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall" # x86 software keys to look through
+                    } 
+                    
+                    foreach($profile in $userProfiles) {
+                        if($usersHive.OpenSubKey("$profile\Software\Microsoft\Windows\CurrentVersion\Uninstall")) { # if the key exists
+                            $userKeys += "$profile\Software\Microsoft\Windows\CurrentVersion\Uninstall" # add to list of profile-specific software keys to look through
+                        }
+                    }
+                    
+                    # loop through the LocalMachine keys
+                    foreach($parentKey in $LMkeys) {
+                        $childKeys = $LMHive.OpenSubKey($parentKey).GetSubKeyNames()
+                        foreach($childKey in $childKeys) {
+                            $SWkey = $LMHive.OpenSubKey("$parentKey\$childKey")
+                            
+                            if($SWkey.getvalue("displayname") -like "") {
+                                continue # break this iteration of the loop if it's blank
+                            }
+                        
+                            foreach($key in $software.keys) {
+                                if($SWkey.getvalue("displayname") -like $key) {
+                                    if(-Not($sw_list -contains $key)) {
+                                        $sw_list += $key    
+                                    }
+                                    continue
+                                }    
+                            }    
+                        }
+                    }
+                    
+                    # loop through the Users keys
+                    foreach($parentKey in $userKeys) {
+                        $childKeys = $usersHive.OpenSubKey($parentKey).GetSubKeyNames()
+                        foreach($childKey in $childKeys) {
+                            $SWkey = $usersHive.OpenSubKey("$parentKey\$childKey")
+                            
+                            if($SWkey.getvalue("displayname") -like "") {
+                                continue # break this iteration of the loop if it's blank
+                            }
+
+                            foreach($key in $software.keys) {
+                                if($SWkey.getvalue("displayname") -like $key) {
+                                    if(-Not($sw_list -contains $key)) {
+                                        $sw_list += $key    
+                                    }
+                                    continue
+                                }    
+                            }
+                        }
+                    }
+                    
+                    if(-Not($sw_list.length -eq 0)) {
+                        foreach($item in $sw_list) {
+                            Write-Host $item
+                            $column = $software[$item][1]
+                            $row = $software[$item][0]
+                            $ExcelWorkSheet.Cells.Item($row,$column) = $computerName
+
+                            $software[$item][0] += 1
+                        }
+                        
+                        # save the worksheet
+                        $ExcelWorkBook.Save()
+                    }
+                    
+                } catch {
+                    $computerName | out-file $no_registry_access -Append
+                }
+
+                # attempt to determine OS
+                try {
+                    $OS=Get-WmiObject Win32_OperatingSystem -computername $computerName -ea stop
+                    $OS = $OS.Name
+                    $pos = $OS.IndexOf("|")
+                    $OS = $OS.Substring(0, $pos)
+                    if($OS -match '.+?\s$') { # if ends with space, remove space
+                        $OS = $OS.Substring(0,$OS.Length-1)
+                    }
+                    write-host $OS
+                    $column = $software[$OS][1]
+                    $row = $software[$OS][0]
+                    $ExcelWorkSheet.Cells.Item($row,$column) = $computerName
+                    $software[$OS][0] += 1
+                } catch {
+                    $column = $software["Unknown OS"][1]
+                    $row = $software["Unknown OS"][0]
+                    $ExcelWorkSheet.Cells.Item($row,$column) = $computerName
+                    $software["Unknown OS"][0] += 1  
+                }
+
+            } else {
+                [void]$uncheckedComputers.add($computer)
+            }
+        }
+
+        # set computers array to uncheckedComputers array
+        $computers = $uncheckedComputers
+
+        if($computers.count -gt 0) {
+            New-Item $unreachable -type file -force
+            write-host "`r`n"
+            Write-Host "unreachable computers: "
+
+            foreach($x in $computers){
+                Write-Host $x
+                $x.Name + " " + $x.Description | out-file $unreachable -Append
+            }
+            Write-Host "`r`n"
+            "`r`n" | out-file $unreachable -Append
+        }
+    }
+} catch {
+    Write-Host "script terminated"
+} finally {
+    if($Excel){
+        # save and close the spreadsheet
+        $ExcelWorkBook.Save()
+        $ExcelWorkBook.Close()
+        $Excel.Quit()
+        [System.Runtime.Interopservices.Marshal]::ReleaseComObject($Excel)
+    }
+}
+
+    </pre>
+</div>
+<div class="content-block">
 				<h1>Python SSH Client with Paramiko</h1>
 				<time datetime="2017-04-10">April 10, 2017</time>
 				<p>Here's a rough draft of my Python SSH client. I have plans to expand the functionality to include SFTP. Stay tuned for a server implementation as well.</p>
@@ -224,7 +451,7 @@ except Exception as e:
                 <img src="{{ asset('images/blog/step_2.png') }}" alt="Graph">
                 <img src="{{ asset('images/blog/adj_2.png') }}" alt="Adjacency list">
 
-                <p>I'm going to take this opportunity to explain the findHead(x) function in the code below as it will help us understand how the adjacency list works. For any node x, the algorithm follows the chain of arrows in the adjacency list, starting at x, until the end of the 'arrow chain' is reached. We'll call the node at the end of the chain the 'head' of the chain and the function returns this value. For example, findHead(3) would return 1 for the adjacency list in the image above. How does this help us to determine whether we can add an edge or not? Let's work with the next edge, 2-3, to help us understand. findHead(2) returns itself, namely 2, as there's no chain of arrows to follow and findHead(3) returns a head of 1. Because findHead() returns a different head for these two chains of arrows (which represent connectedness), we know that these two nodes are not connected. We can safely add an edge connecting them without creating a cycle. This new connection must be reflected in the adjacency list so we set the value findHead(2), namely 2, as the parent of findHead(3), which is 1:</p>
+                <p>I'm going to take this opportunity to explain the findHead(x) function in the code below as it will help us understand how the adjacency list works. For any node x, findHead() follows the chain of arrows in the adjacency list, starting at x, until the end of the 'arrow chain' is reached. We'll call the node at the end of the chain the 'head' of the chain and the function returns this value. For example, findHead(3) would return 1 for the adjacency list in the image above. How does this help us to determine whether we can add an edge or not? Let's work with the next edge, 2-3, to help us understand. findHead(2) returns itself, namely 2, as there's no chain of arrows to follow and findHead(3) returns a head of 1. Because findHead() returns a different head for these two chains of arrows (which represent connectedness), we know that these two nodes are not connected. We can safely add an edge connecting them without creating a cycle. This new connection must be reflected in the adjacency list so we set the value findHead(2), namely 2, as the parent of findHead(3), which is 1:</p>
 
                 <img src="{{ asset('images/blog/step_3.png') }}" alt="Graph">
                 <img src="{{ asset('images/blog/adj_3.png') }}" alt="Adjacency list">
