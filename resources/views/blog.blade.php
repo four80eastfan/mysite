@@ -5,11 +5,11 @@
 <div class="content-block">
     <h1>Python SSH Client with Paramiko</h1>
     <time datetime="2017-04-16">April 10, 2017</time>
-    <p>Scan computers on domain for specific installed software. Outputs an Excel spreadsheet report</p>
+    <p>Scan computers on domain for specific installed software and what version of Windows they're running. Outputs an Excel spreadsheet report.</p>
     <pre class="prettyprint">
 try {
 
-    [System.Collections.ArrayList]$computers = Get-ADComputer -SearchBase '<your domain here>' -Filter '*' -Properties Description
+    [System.Collections.ArrayList]$computers = Get-ADComputer -SearchBase 'your domain here' -Filter '*' -Properties Description
     
     # list of software that's going to be checked for
     $software = @{"*office professional plus 2007*" = @(2, 1); # @(row, column) in spreadsheet
