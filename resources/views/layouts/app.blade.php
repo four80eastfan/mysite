@@ -19,8 +19,8 @@
         window.Laravel = {!! json_encode([
             'csrfToken' => csrf_token(),
         ]) !!};
-        @yield('script')
     </script>
+    @yield('script')
 </head>
 <body>
     <div class="bg">
