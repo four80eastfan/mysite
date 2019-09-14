@@ -4,6 +4,10 @@
     <link href="{{ asset('css/contact_page.css') }}" rel="stylesheet">
 @endsection
 
+@section('script')
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+@endsection
+
 @section('content')
 <div class="container">
     <div class="row">
