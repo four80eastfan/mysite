@@ -60,7 +60,7 @@
                             </div>
                         </div>
                         
-                        <div class="col-md-6 g-recaptcha" data-sitekey="6LfVdLgUAAAAADZeYm6yKHM8p8ls5G8WyxcZtdMC"></div>
+                        <div class="g-recaptcha" data-sitekey="6LfVdLgUAAAAADZeYm6yKHM8p8ls5G8WyxcZtdMC"></div>
                         <br/>
 
                         <div class="form-group">
