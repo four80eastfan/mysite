@@ -47,9 +47,8 @@ Route::get('/home', 'HomeController@index')->name('home');
 Route::get('/confirm', 'ConfirmEmailController@showConfirmForm')->name('confirm');
 Route::post('/confirm', 'ConfirmEmailController@generateLink');
 
-Route::get('/contact', 'ContactController@showContactForm');
-Route::post('/contact', 'ContactController@sendContactForm')->name('contact');
-#Route::get('/contact', 'HomeController@index'); # temp fix for spam
+Route::get('/contact', 'ContactController@showContactForm')->name('contact'); # the ->name('contact') used to be on the post route below
+#Route::post('/contact', 'ContactController@sendContactForm');
 
 Route::get('/blog', 'BlogController@showBlog')->name('blog');
 
