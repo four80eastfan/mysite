@@ -50,7 +50,7 @@
                             <label for="message" class="col-md-4 control-label">Message</label>
 
                             <div class="col-md-6">
-                                <textarea id="message" type="text" class="form-control" name="message" rows="3" value="{{ old('message') }}" required></textarea>
+                                <textarea id="message" type="text" class="form-control" name="message" rows="3" value="{{ old('message') }}" required>Contact form is temporarily disabled until I have time to integrate the reCAPTCHA. Sorry for the inconvenience...</textarea>
 
                                 @if ($errors->has('message'))
                                     <span class="help-block">
