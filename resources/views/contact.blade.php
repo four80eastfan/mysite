@@ -4,9 +4,9 @@
     <link href="{{ asset('css/contact_page.css') }}" rel="stylesheet">
 @endsection
 
-@section('script')
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-@endsection
+<!-- @section('script')
+    #<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+@endsection -->
 
 @section('content')
 <div class="container">
@@ -60,8 +60,8 @@
                             </div>
                         </div>
                         
-                        <div class="g-recaptcha col-md-6" data-sitekey="6LfVdLgUAAAAADZeYm6yKHM8p8ls5G8WyxcZtdMC"></div>
-                        <br/>
+                        <!-- <div class="g-recaptcha col-md-6" data-sitekey="6LfVdLgUAAAAADZeYm6yKHM8p8ls5G8WyxcZtdMC"></div>
+                        <br/> -->
 
                         <div class="form-group">
                             <div class="col-md-6 col-md-offset-4">
